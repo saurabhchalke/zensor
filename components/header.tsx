@@ -7,7 +7,7 @@ export default function Header() {
         href="/"
         className="text-xl md:mb-auto mb-5 font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600"
       >
-        Feedback
+        Zensor
       </Link>
       <a
         href={`${process.env.NEXT_PUBLIC_BANDADA_DASHBOARD_URL}/groups/off-chain/${process.env.NEXT_PUBLIC_BANDADA_GROUP_ID}`}

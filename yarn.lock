@@ -1378,6 +1378,7 @@ __metadata:
     eslint: "npm:8.48.0"
     eslint-config-next: "npm:13.4.19"
     ethers: "npm:^6.7.1"
+    js-sha256: "npm:^0.11.0"
     next: "npm:13.4.19"
     postcss: "npm:8.4.29"
     prettier: "npm:^3.0.3"
@@ -3350,6 +3351,13 @@ __metadata:
   bin:
     jiti: bin/jiti.js
   checksum: 10/b4bc01fc27e5372efcbd82656e654b52043ff6d6e9f0054d6e87738776b042250a165726516e38704938bfbdfe703ff12b83ab985e059f3a5e23fee50c34ced9
+  languageName: node
+  linkType: hard
+
+"js-sha256@npm:^0.11.0":
+  version: 0.11.0
+  resolution: "js-sha256@npm:0.11.0"
+  checksum: 10/3adc208452302838136f1464ea331bae3b4d4c95afa9314fa6446d755059ff37114cb209fe9ed166c460ffe720d4875aa955e4f4c7aacab2d99858dd3e008b93
   languageName: node
   linkType: hard
 

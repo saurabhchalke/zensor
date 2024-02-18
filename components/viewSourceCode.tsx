@@ -1,4 +1,4 @@
-const GITHUB_LINK = "https://github.com/vplasencia/bandada-semaphore-demo"
+const GITHUB_LINK = "https://github.com/saurabhchalke/zensor"
 
 export default function ViewSourceCode() {
   return (

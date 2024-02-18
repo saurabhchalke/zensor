@@ -8,7 +8,7 @@ export default function Layout({ children }: any) {
       <Head>
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <title>Feedback</title>
+        <title>Zensor</title>
         <meta name="title" content="Feedback" />
         <meta name="description" content="Bandada-Semaphore demo app" />
         <meta name="theme-color" content="#3b82f6" />

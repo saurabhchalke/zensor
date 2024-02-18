@@ -1,86 +1,71 @@
-import { Identity } from "@semaphore-protocol/identity"
-import { useRouter } from "next/router"
-import React, { useEffect, useState } from "react"
-import { getMembersGroup } from "@/utils/bandadaApi"
-import Stepper from "@/components/stepper"
-import { Group } from "@semaphore-protocol/group"
-import { generateProof, generateSindriProof } from "@saurabhchalke/proof"
+import { Identity } from "@semaphore-protocol/identity";
+import { useRouter } from "next/router";
+import React, { useEffect, useState } from "react";
+import { getMembersGroup } from "@/utils/bandadaApi";
+import Stepper from "@/components/stepper";
+import { Group } from "@semaphore-protocol/group";
+import { generateProof, generateSindriProof } from "@saurabhchalke/proof";
 import {
   encodeBytes32String,
   toBigInt,
   decodeBytes32String,
-  toBeHex
-} from "ethers"
-import Divider from "@/components/divider"
+  toBeHex,
+} from "ethers";
+import Divider from "@/components/divider";
+import { sha256 } from "js-sha256";
 
-export default function ProofsPage() {
-  const router = useRouter()
+const ProofsPage = () => {
+  const router = useRouter();
+  const { fileContent } = router.query;
 
-  const [_identity, setIdentity] = useState<Identity>()
-  const [_loading, setLoading] = useState<boolean>(false)
-  const [_renderInfoLoading, setRenderInfoLoading] = useState<boolean>(false)
-  const [_feedback, setFeedback] = useState<string[]>([])
+  const [_identity, setIdentity] = useState<Identity>();
+  const [_loading, setLoading] = useState<boolean>(false);
+  const [_renderInfoLoading, setRenderInfoLoading] = useState<boolean>(false);
+  const [_feedback, setFeedback] = useState<string[]>([]);
 
-  const localStorageTag = process.env.NEXT_PUBLIC_LOCAL_STORAGE_TAG!
-
-  const groupId = process.env.NEXT_PUBLIC_BANDADA_GROUP_ID!
+  const localStorageTag = process.env.NEXT_PUBLIC_LOCAL_STORAGE_TAG!;
+  const groupId = process.env.NEXT_PUBLIC_BANDADA_GROUP_ID!;
 
   useEffect(() => {
-    const identityString = localStorage.getItem(localStorageTag)
-
+    const identityString = localStorage.getItem(localStorageTag);
     if (!identityString) {
-      router.push("/")
-      return
+      router.push("/");
+      return;
     }
-
-    const identity = new Identity(identityString)
-
-    setIdentity(identity)
-  }, [router, localStorageTag])
+    const identity = new Identity(identityString);
+    setIdentity(identity);
+  }, [router, localStorageTag]);
 
   useEffect(() => {
-    getFeedback()
-  }, [])
+    getFeedback();
+  }, []);
 
   const sendFeedback = async () => {
-    if (!_identity) {
-      return
+    if (!_identity || !fileContent) {
+      return;
     }
 
-    const feedback = prompt("Please enter your feedback:")
+    const users = await getMembersGroup(groupId);
 
-    const users = await getMembersGroup(groupId)
-
-    if (feedback && users) {
-      setLoading(true)
+    if (users) {
+      setLoading(true);
 
       let proof, merkleTreeRoot, nullifierHash;
 
       try {
-        const group = new Group(groupId, 16, users)
+        const group = new Group(groupId, 16, users);
 
-        const signal = toBigInt(encodeBytes32String(feedback)).toString()
+        // Use the SHA-256 hash of the file content as the signal
+        const signal = "0x" + sha256(fileContent.toString());
 
         let proofResult;
 
         if (!process.env.NEXT_PUBLIC_SINDRI_API_KEY || process.env.NEXT_PUBLIC_SINDRI_ENABLED == "false") {
-          // print the process env
-          console.log("process.env.NEXT_PUBLIC_SINDRI_API_KEY", process.env.NEXT_PUBLIC_SINDRI_API_KEY)
-          console.log("process.env.NEXT_PUBLIC_SINDRI_ENABLED", process.env.NEXT_PUBLIC_SINDRI_ENABLED)
-          proofResult = await generateProof(
-            _identity,
-            group,
-            groupId,
-            signal,
-            {
-              wasmFilePath: "./semaphore.wasm",
-              zkeyFilePath: "./semaphore.zkey"
-            }
-          )
+          proofResult = await generateProof(_identity, group, groupId, signal, {
+            wasmFilePath: "./semaphore.wasm",
+            zkeyFilePath: "./semaphore.zkey",
+          });
         } else {
-          console.log("process.env.NEXT_PUBLIC_SINDRI_API_KEY", process.env.NEXT_PUBLIC_SINDRI_API_KEY)
-          console.log("process.env.NEXT_PUBLIC_SINDRI_ENABLED", process.env.NEXT_PUBLIC_SINDRI_ENABLED)
-          console.log("Generating proof using Sindri")
           proofResult = await generateSindriProof(
             _identity,
             group,
@@ -89,9 +74,9 @@ export default function ProofsPage() {
             process.env.NEXT_PUBLIC_SINDRI_SEMAPHORE_CIRCUIT_ID as string,
             {
               wasmFilePath: "./semaphore.wasm",
-              zkeyFilePath: "./semaphore.zkey"
+              zkeyFilePath: "./semaphore.zkey",
             }
-          )
+          );
         }
 
         proof = proofResult?.proof;
@@ -105,64 +90,62 @@ export default function ProofsPage() {
             feedback: signal,
             merkleTreeRoot,
             nullifierHash,
-            proof
-          })
-        })
+            proof,
+          }),
+        });
 
         if (response.status === 200) {
-          const data = await response.json()
+          const data = await response.json();
 
-          console.log(data[0].signal)
+          if (data) setFeedback([data[0].signal, ..._feedback]);
 
-          if (data) setFeedback([data[0].signal, ..._feedback])
-
-          console.log(`Your feedback was posted 🎉`)
+          console.log(`Your sensor data was posted 🎉`);
         } else {
-          console.log(await response.text())
-          alert(await response.text())
+          console.log(await response.text());
+          alert(await response.text());
         }
       } catch (error) {
-        console.error(error)
+        console.error(error);
 
-        alert("Some error occurred, please try again!")
+        alert("Some error occurred, please try again!");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     }
-  }
+  };
 
   const getFeedback = async () => {
-    setRenderInfoLoading(true)
+    setRenderInfoLoading(true);
     try {
       const response = await fetch("api/get-feedback", {
         method: "GET",
-        headers: { "Content-Type": "application/json" }
-      })
+        headers: { "Content-Type": "application/json" },
+      });
 
-      const signals = await response.json()
+      const signals = await response.json();
 
       if (response.status === 200) {
-        setFeedback(signals.map((signal: any) => signal.signal))
+        setFeedback(signals.map((signal: any) => signal.signal));
 
-        console.log("Feedback retrieved from the database")
+        console.log("Feedback retrieved from the database");
       } else {
-        alert("Some error occurred, please try again!")
+        alert("Some error occurred, please try again!");
       }
     } catch (error) {
-      console.error(error)
+      console.error(error);
 
-      alert("Some error occurred, please try again!")
+      alert("Some error occurred, please try again!");
     } finally {
-      setRenderInfoLoading(false)
+      setRenderInfoLoading(false);
     }
-  }
+  };
 
   const renderFeedback = () => {
     return (
       <div className="lg:w-2/5 md:w-2/4 w-full">
         <div className="flex justify-between items-center mb-10">
           <div className="text-2xl font-semibold text-slate-700">
-            Feedback signals ({_feedback?.length})
+            Sensor data signals ({_feedback?.length})
           </div>
           <div>
             <button
@@ -181,14 +164,14 @@ export default function ProofsPage() {
             disabled={_loading || _renderInfoLoading}
           >
             {_loading && <div className="loader"></div>}
-            <span>Send Feedback</span>
+            <span>Send Sensor Data</span>
           </button>
         </div>
 
         {_renderInfoLoading && (
           <div className="flex justify-center items-center mt-20 gap-2">
             <div className="loader-app"></div>
-            <div>Fetching feedback</div>
+            <div>Fetching sensor data</div>
           </div>
         )}
 
@@ -200,7 +183,7 @@ export default function ProofsPage() {
                   key={i}
                   className="overflow-auto border-2 p-3 border-slate-300 space-y-3"
                 >
-                  {decodeBytes32String(toBeHex(feedback))}
+                  {sha256(feedback)}
                 </div>
               ))}
             </div>
@@ -211,30 +194,19 @@ export default function ProofsPage() {
           </div>
         )}
       </div>
-    )
-  }
+    );
+  };
 
   return (
     <div>
       <div>
         <div className="flex justify-center items-center">
-          <h1 className="text-3xl font-semibold text-slate-700">Proofs</h1>
+          <h1 className="text-3xl font-semibold text-slate-700">Prove Sensor Data</h1>
         </div>
         <div className="flex justify-center items-center mt-10">
           <span className="lg:w-2/5 md:w-2/4 w-full">
             <span>
-              Members can anonymously{" "}
-              <a
-                className="space-x-1 text-blue-700 hover:underline"
-                href="https://semaphore.pse.dev/docs/guides/proofs"
-                target="_blank"
-                rel="noreferrer noopener nofollow"
-              >
-                prove
-              </a>{" "}
-              that they are part of a group and that they are generating their
-              own signals. Signals could be anonymous votes, leaks, reviews, or
-              feedback.
+              Sensors can anonymously prove that they are part of a sensor network and are not lying about their data.
             </span>
             <Divider />
           </span>
@@ -249,5 +221,7 @@ export default function ProofsPage() {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
+
+export default ProofsPage;

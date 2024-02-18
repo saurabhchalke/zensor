@@ -4,10 +4,14 @@ import { getMembersGroup, getGroup } from "@/utils/bandadaApi"
 import Stepper from "@/components/stepper"
 import Divider from "@/components/divider"
 import { getRoot } from "@/utils/useSemaphore"
-import { useSearchParams, useRouter } from "next/navigation"
+import { useSearchParams } from "next/navigation"
+import { useRouter } from "next/router"
 
 export default function GroupsPage() {
   const router = useRouter()
+  const { fileContent } = router.query
+
+  console.log(fileContent)
 
   // To read the url params for credential groups
   const searchParams = useSearchParams()
@@ -152,7 +156,7 @@ export default function GroupsPage() {
       <div className="lg:w-2/5 md:w-2/4 w-full">
         <div className="flex justify-between items-center mb-10">
           <div className="text-2xl font-semibold text-slate-700">
-            Feedback users ({_users?.length})
+            Sensor Networks ({_users?.length})
           </div>
           <div>
             <button
@@ -208,14 +212,12 @@ export default function GroupsPage() {
     <div>
       <div>
         <div className="flex justify-center items-center">
-          <h1 className="text-3xl font-semibold text-slate-700">Groups</h1>
+          <h1 className="text-3xl font-semibold text-slate-700">Sensor Network</h1>
         </div>
         <div className="flex justify-center items-center mt-10">
           <span className="lg:w-2/5 md:w-2/4 w-full">
             <span>
-              Bandada groups are binary Incremental Merkle Trees in which each
-              leaf contains an identity commitment for a user. Groups can be
-              abstracted to represent events, polls, or organizations.
+              Please add your sensor device to the anonymoud sensor network. You will be able to share your sensor data with other members of the network, and prove that the data is authentic and untampered.
             </span>
             <Divider />
           </span>
@@ -230,7 +232,10 @@ export default function GroupsPage() {
               onPrevClick={() => router.push("/")}
               onNextClick={
                 _identity && Boolean(_isGroupMember) && !_loading
-                  ? () => router.push("/proofs")
+                  ? () => router.push({
+                    pathname: "/proofs",
+                    query: { fileContent },
+                  })
                   : undefined
               }
             />
