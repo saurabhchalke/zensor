@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react"
 import { getMembersGroup } from "@/utils/bandadaApi"
 import Stepper from "@/components/stepper"
 import { Group } from "@semaphore-protocol/group"
-import { generateProof } from "@semaphore-protocol/proof"
+import { generateProof, generateSindriProof } from "@saurabhchalke/proof"
 import {
   encodeBytes32String,
   toBigInt,
@@ -54,17 +54,49 @@ export default function ProofsPage() {
     if (feedback && users) {
       setLoading(true)
 
+      let proof, merkleTreeRoot, nullifierHash;
+
       try {
         const group = new Group(groupId, 16, users)
 
         const signal = toBigInt(encodeBytes32String(feedback)).toString()
 
-        const { proof, merkleTreeRoot, nullifierHash } = await generateProof(
-          _identity,
-          group,
-          groupId,
-          signal
-        )
+        let proofResult;
+
+        if (!process.env.NEXT_PUBLIC_SINDRI_API_KEY || process.env.NEXT_PUBLIC_SINDRI_ENABLED == "false") {
+          // print the process env
+          console.log("process.env.NEXT_PUBLIC_SINDRI_API_KEY", process.env.NEXT_PUBLIC_SINDRI_API_KEY)
+          console.log("process.env.NEXT_PUBLIC_SINDRI_ENABLED", process.env.NEXT_PUBLIC_SINDRI_ENABLED)
+          proofResult = await generateProof(
+            _identity,
+            group,
+            groupId,
+            signal,
+            {
+              wasmFilePath: "./semaphore.wasm",
+              zkeyFilePath: "./semaphore.zkey"
+            }
+          )
+        } else {
+          console.log("process.env.NEXT_PUBLIC_SINDRI_API_KEY", process.env.NEXT_PUBLIC_SINDRI_API_KEY)
+          console.log("process.env.NEXT_PUBLIC_SINDRI_ENABLED", process.env.NEXT_PUBLIC_SINDRI_ENABLED)
+          console.log("Generating proof using Sindri")
+          proofResult = await generateSindriProof(
+            _identity,
+            group,
+            groupId,
+            signal,
+            process.env.NEXT_PUBLIC_SINDRI_SEMAPHORE_CIRCUIT_ID as string,
+            {
+              wasmFilePath: "./semaphore.wasm",
+              zkeyFilePath: "./semaphore.zkey"
+            }
+          )
+        }
+
+        proof = proofResult?.proof;
+        merkleTreeRoot = proofResult?.merkleTreeRoot;
+        nullifierHash = proofResult?.nullifierHash;
 
         const response = await fetch("api/send-feedback", {
           method: "POST",

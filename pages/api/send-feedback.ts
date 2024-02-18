@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next"
-import { verifyProof } from "@semaphore-protocol/proof"
+import { verifyProof } from "@saurabhchalke/proof"
 import supabase from "@/utils/supabaseClient"
 import { getGroup } from "@/utils/bandadaApi"
 

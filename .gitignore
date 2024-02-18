@@ -45,3 +45,5 @@ supabase
 !.yarn/sdks
 !.yarn/versions
 
+input-params.txt
+
